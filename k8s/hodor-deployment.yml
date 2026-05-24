@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hodor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hodor
+  template:
+    metadata:
+      labels:
+        app: hodor
+    spec:
+      containers:
+      - name: hodor
+        image: hodor:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: hodor-config
+        - secretRef:
+            name: hodor-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hodor
+spec:
+  selector:
+    app: hodor
+  ports:
+  - port: 8080
+    targetPort: 8080
+    
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hodor-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hodor
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

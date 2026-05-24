@@ -1,0 +1,35 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build hodor image
+      run: docker build -t hodor:latest ./hodor
+
+    - name: Build bran image
+      run: docker build -t bran:latest ./bran
+
+    - name: Start services
+      run: docker-compose up -d
+
+    - name: Wait for services
+      run: sleep 15
+
+    - name: Test hodor
+      run: curl -f http://localhost/hodr/
+
+    - name: Test bran
+      run: curl -f http://localhost/bran/
+
+    - name: Test bran calling hodor
+      run: curl -f http://localhost/bran/call-hodor/
+
+    - name: Stop services
+      run: docker-compose down
